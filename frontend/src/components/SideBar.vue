@@ -99,7 +99,8 @@ export default {
     handleDelete(index, row) {
       let that = this;
       this.fileList.splice(index,1);
-      console.log(index, row);
+      EventBus.$emit('deleteFile',that.currentRow.name)
+      console.log('delete' + index, row);
     },
     getData() {
       axios

@@ -38,6 +38,7 @@ export default {
   },
   data() {
     return {
+      current_file: 'None',
       option: {
         title: {
           text: "折线图堆叠",
@@ -142,6 +143,7 @@ export default {
           temp_dict['data'] = temp_data
           this.option.legend.data.push(temp_name)
           this.option.series.push(temp_dict)
+
         }
       })
     },
@@ -159,7 +161,8 @@ export default {
       this.option.data = []
       this.option.series = []
       this.getData(msg)
-      console.log(msg)
+      this.current_file = msg
+      console.log('current file:'+this.current_file)
     })
   }
 };
