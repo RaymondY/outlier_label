@@ -42,7 +42,7 @@
 </template>
 <script>
 import axios from "axios";
-
+import { EventBus } from "../event-bus.js";
 export default {
   data() {
     return {
@@ -65,28 +65,40 @@ export default {
       that.fileList.push({ name: fileObj.file.name });
       // formData.set("file", fileObj.file);
       axios
-        .post("/upload", fileObj.file.name, {
+        .post("http://127.0.0.1:5000/upload", fileObj.file.name, {
           headers: {
             "Content-Type": "text/plain",
           },
         })
         .then((response) => {
-          if (response.code === 200) {
+          if (response.status === 200) {
             // 提交成功将要执行的代码
+            console.log('upload success')
+            this.$message({
+              message:'上传成功',
+              type:'success'
+            })
           }
         })
         .catch(function (error) {
           console.log(error);
+          this.$message({
+              message:'上传失败',
+              type:'error'
+          })
         });
     },
-    handleCurrentChange(val) {
+    handleCurrentChange(Row) {
       let that = this;
-      that.currentRow = val;
+      that.currentRow = Row;
+      EventBus.$emit('changeRow',that.currentRow.name)
     },
     handleEdit(index, row) {
       console.log(index, row);
     },
     handleDelete(index, row) {
+      let that = this;
+      this.fileList.splice(index,1);
       console.log(index, row);
     },
     getData() {
@@ -102,6 +114,13 @@ export default {
           console.log(error);
         });
     },
+    writeObj(obj){ 
+      var description = ""; 
+      for(var i in obj){ 
+      var property=obj[i]; 
+      description+=i+" = "+property+"\n"; 
+      } 
+    } 
   },
 };
 </script>

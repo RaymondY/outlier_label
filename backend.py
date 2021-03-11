@@ -4,6 +4,7 @@
 """
 import os
 import traceback
+import json
 import numpy as np
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
@@ -25,6 +26,7 @@ def loadData(path, metric_num, input_size, day_num):
         data[kpi] = baseline
 
     # row: kpi(19); col: 288*15/test, 288*30/train
+    print(data)
     return data
 
 
@@ -44,30 +46,44 @@ def upload():
     try:
         file_name = request.data.decode("utf-8")
         path = "./data/" + file_name
+        print(path)
         # 应该在前端留接口
         metric_num, input_size, day_num = 19, 288, 15
         global data
         data = loadData(path, metric_num, input_size, day_num)
-        message = {'status': 'success'}
+        dict_data = {file_name : data.tolist()}
+        str_data = json.dumps(dict_data)
+        # 将文件的数据以dict形式存储至json文件中
+        with open('./'+file_name+'_data.json','w',encoding='utf-8') as fp:
+            json.dump(dict_data,fp,ensure_ascii=True)
+        # print('==========================================')
+        # with open('./info.json','r',encoding='utf-8') as fp:
+        #     t_dict = json.load(fp)
+        #     print(t_dict)
+        
         # return jsonify(message)
-        return jsonify(data.tolist())
+        # return jsonify(data.tolist())
+        return 'success'
     except Exception as e:
         traceback.print_exc()
         return jsonify({'status': 'fail'})
 
 
-@app.route('/get', methods=['GET'])
-def get_data():
+@app.route('/get/<file_name>', methods=['GET'])
+def get_data(file_name):
     global data
     # noinspection PyBroadException
-    try:
-        response_data = data.tolist()
-        return jsonify(response_data)
+    with open('./'+file_name+'_data.json','r',encoding='utf-8') as fp:
+        t_dict = json.load(fp)
+        data = t_dict
+        
+    # try:
+    return jsonify(data)
 
-    except Exception as e:
-        traceback.print_exc()
+    # except Exception as e:
+    #     traceback.print_exc()
 
-        return None
+    #     return None
 
 
 if __name__ == '__main__':
@@ -75,4 +91,4 @@ if __name__ == '__main__':
     # 设置 host='0.0.0.0'，让操作系统监听所有公网 IP
     # 也就是把自己的电脑作为服务器，可以让别人访问
     # app.run(debug=True)
-    app.run(debug=False)
+    app.run(debug=True)
