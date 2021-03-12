@@ -18,7 +18,7 @@ data = None
 
 
 def loadData(path, metric_num, input_size, day_num):
-    temp_data = np.loadtxt(path, skiprows=1, delimiter=',')
+    temp_data = np.loadtxt(path,delimiter=',',skiprows=1)
     data = np.zeros(shape=(metric_num, input_size * day_num))
     for kpi in range(metric_num):
         # baseline 预留 可以raw_data做预处理
@@ -26,9 +26,15 @@ def loadData(path, metric_num, input_size, day_num):
         data[kpi] = baseline
 
     # row: kpi(19); col: 288*15/test, 288*30/train
-    print(data)
     return data
 
+def strip_first_col(fname, delimiter):
+    with open(fname, 'r') as fin:
+        for line in fin:
+            try:
+               yield line.split(delimiter, 1)[1]
+            except IndexError:
+               continue
 
 @app.route("/")
 def index():
@@ -85,6 +91,11 @@ def get_data(file_name):
 
     #     return None
 
+@app.route('/del/<file_name>', methods=['POST'])
+def del_data(file_name):
+    print('remove:'+'./'+file_name+'_data.json')
+    os.remove('./'+file_name+'_data.json')
+    return 'deleted'
 
 if __name__ == '__main__':
     # 开启 debug模式，这样我们就不用每更改一次文件，就重新启动一次服务

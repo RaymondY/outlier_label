@@ -89,18 +89,25 @@ export default {
         });
     },
     handleCurrentChange(Row) {
-      let that = this;
-      that.currentRow = Row;
-      EventBus.$emit('changeRow',that.currentRow.name)
+      if(Row != null && this.nameinList(Row.name,this.fileList)){
+        console.log('handle change')
+        let that = this;
+        that.currentRow = Row;
+        EventBus.$emit('changeRow',that.currentRow.name)
+      }
     },
     handleEdit(index, row) {
       console.log(index, row);
     },
     handleDelete(index, row) {
+      console.log('handle delete')
+      axios.post("http://127.0.0.1:5000/del/"+row.name,row.name).then((response)=>{
+
+      })
       let that = this;
+      that.currentRow = null
       this.fileList.splice(index,1);
-      EventBus.$emit('deleteFile',that.currentRow.name)
-      console.log('delete' + index, row);
+      EventBus.$emit('deleteRow')
     },
     getData() {
       axios
@@ -115,11 +122,19 @@ export default {
           console.log(error);
         });
     },
+    nameinList(t_str,t_list){
+      for(var i=0;i<t_list.length;i++){
+        if(t_str == t_list[i].name)
+        return true
+      }
+      return false
+    },
     writeObj(obj){ 
       var description = ""; 
       for(var i in obj){ 
       var property=obj[i]; 
       description+=i+" = "+property+"\n"; 
+      alert(description);
       } 
     } 
   },

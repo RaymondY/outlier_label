@@ -1,5 +1,5 @@
 <template>
-  <v-chart class="chart" :option="option" />
+  <v-chart class="chart" :option="option" id="datachart" />
 </template>
 
 <script>
@@ -143,7 +143,6 @@ export default {
           temp_dict['data'] = temp_data
           this.option.legend.data.push(temp_name)
           this.option.series.push(temp_dict)
-
         }
       })
     },
@@ -163,6 +162,11 @@ export default {
       this.getData(msg)
       this.current_file = msg
       console.log('current file:'+this.current_file)
+    }),
+    EventBus.$on('deleteRow', msg => {
+      this.option.data = []
+      this.option.series = []
+      LineChart.clear()
     })
   }
 };
