@@ -14,27 +14,38 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder='./templates/static', template_folder='./templates')
 
 CORS(app, supports_credentials=True)
-data = None
+# data = None
 
 
-def loadData(path, metric_num, input_size, day_num):
-    temp_data = np.loadtxt(path,delimiter=',',skiprows=1)
-    data = np.zeros(shape=(metric_num, input_size * day_num))
-    for kpi in range(metric_num):
-        # baseline 预留 可以raw_data做预处理
-        baseline = temp_data[:, kpi]
-        data[kpi] = baseline
+# def loadData(path, metric_num, input_size, day_num):
+#     temp_data = np.loadtxt(path, delimiter=',', skiprows=1)
+#     data = np.zeros(shape=(metric_num, input_size * day_num))
+#     for kpi in range(metric_num):
+#         # baseline 预留 可以raw_data做预处理
+#         baseline = temp_data[:, kpi]
+#         data[kpi] = baseline
+#
+#     # row: kpi(19); col: 288*15/test, 288*30/train
+#     return data
 
-    # row: kpi(19); col: 288*15/test, 288*30/train
-    return data
+
+def load_data(path):
+    temp_data = np.loadtxt(path, delimiter=',', skiprows=1)
+    time = temp_data[:, 0]
+    data = temp_data[:, 1:]
+    # 关闭科学计数法显示
+    # np.set_printoptions(suppress=True)
+    return time, data
+
 
 def strip_first_col(fname, delimiter):
     with open(fname, 'r') as fin:
         for line in fin:
             try:
-               yield line.split(delimiter, 1)[1]
+                yield line.split(delimiter, 1)[1]
             except IndexError:
-               continue
+                continue
+
 
 @app.route("/")
 def index():
@@ -55,18 +66,19 @@ def upload():
         print(path)
         # 应该在前端留接口
         metric_num, input_size, day_num = 19, 288, 15
-        global data
-        data = loadData(path, metric_num, input_size, day_num)
-        dict_data = {file_name : data.tolist()}
+        # global data
+        # data = loadData(path, metric_num, input_size, day_num)
+        time, data = load_data(path)
+        dict_data = {file_name: data.tolist()}
         str_data = json.dumps(dict_data)
         # 将文件的数据以dict形式存储至json文件中
-        with open('./'+file_name+'_data.json','w',encoding='utf-8') as fp:
-            json.dump(dict_data,fp,ensure_ascii=True)
+        with open('./' + file_name + '_data.json', 'w', encoding='utf-8') as fp:
+            json.dump(dict_data, fp, ensure_ascii=True)
         # print('==========================================')
         # with open('./info.json','r',encoding='utf-8') as fp:
         #     t_dict = json.load(fp)
         #     print(t_dict)
-        
+
         # return jsonify(message)
         # return jsonify(data.tolist())
         return 'success'
@@ -79,10 +91,10 @@ def upload():
 def get_data(file_name):
     global data
     # noinspection PyBroadException
-    with open('./'+file_name+'_data.json','r',encoding='utf-8') as fp:
+    with open('./' + file_name + '_data.json', 'r', encoding='utf-8') as fp:
         t_dict = json.load(fp)
         data = t_dict
-        
+
     # try:
     return jsonify(data)
 
@@ -91,11 +103,13 @@ def get_data(file_name):
 
     #     return None
 
+
 @app.route('/del/<file_name>', methods=['POST'])
 def del_data(file_name):
-    print('remove:'+'./'+file_name+'_data.json')
-    os.remove('./'+file_name+'_data.json')
+    print('remove:' + './' + file_name + '_data.json')
+    os.remove('./' + file_name + '_data.json')
     return 'deleted'
+
 
 if __name__ == '__main__':
     # 开启 debug模式，这样我们就不用每更改一次文件，就重新启动一次服务
