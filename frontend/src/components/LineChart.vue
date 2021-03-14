@@ -1,14 +1,19 @@
 <template>
-  <div>
+  <div id = "mainchart" v-if="this.current_file != 'None'">
     <div id='timeseletor'>
       选择时间间隔：
-      <el-radio v-model="timegap" label="6h" border size="mini">6h</el-radio>
-      <el-radio v-model="timegap" label="12h" border size="mini">12h</el-radio>
-      <el-radio v-model="timegap" label="1d" border size="mini">1d</el-radio>
-      <el-radio v-model="timegap" label="3d" border size="mini">3d</el-radio>
-      <el-radio v-model="timegap" label="7d" border size="mini">7d</el-radio>
+      <el-radio-group v-model="timegap">
+        <el-radio :label=360 border size="mini">6h</el-radio>
+        <el-radio :label=720 border size="mini">12h</el-radio>
+        <el-radio :label=1440 border size="mini">1d</el-radio>
+        <el-radio :label=4320 border size="mini">3d</el-radio>
+        <el-radio :label=10080 border size="mini">7d</el-radio>
+        <el-button size="mini" @click="changezoomer">确定</el-button>
+      </el-radio-group>
     </div>
-    <v-chart class="chart" :option="option" id="datachart" v-if="this.current_file != 'None'"/>
+    <div>
+      <v-chart class="chart" :option="option" id="datachart" ref="echart"/>
+    </div>
   </div>
 </template>
 
@@ -48,8 +53,9 @@ export default {
   },
   data() {
     return {
-      timegap:'6h',
+      timegap:144,
       current_file: 'None',
+      mingap:5,
       option: {
         title: {
           text: "折线图堆叠",
@@ -90,43 +96,8 @@ export default {
             start:10,
             end:20
           },
-          {
-            type:'inside',
-            start:10,
-            end:60
-          }
         ],
         series: [
-          // {
-          //   name: "邮件营销",
-          //   type: "line",
-          //   stack: "总量",
-          //   data: [120, 132, 101, 134, 90, 230, 210],
-          // },
-          // {
-          //   name: "联盟广告",
-          //   type: "line",
-          //   stack: "总量",
-          //   data: [220, 182, 191, 234, 290, 330, 310],
-          // },
-          // {
-          //   name: "视频广告",
-          //   type: "line",
-          //   stack: "总量",
-          //   data: [150, 232, 201, 154, 190, 330, 410],
-          // },
-          // {
-          //   name: "直接访问",
-          //   type: "line",
-          //   stack: "总量",
-          //   data: [320, 332, 301, 334, 390, 330, 320],
-          // },
-          // {
-          //   name: "搜索引擎",
-          //   type: "line",
-          //   stack: "总量",
-          //   data: [820, 932, 901, 934, 1290, 1330, 1320],
-          // },
         ],
       },
     };
@@ -136,6 +107,7 @@ export default {
       axios.get('http://127.0.0.1:5000/get/'+file_name).then(response => {
         // this.writeObj(response.data[file_name])
         this.writeObj(response.data)
+        this.mingap = response.data.mingap
         var temp_x_date = []
         for(var j = 0;j<response.data['datas'].length;j++){
           var temp_name = 'kpi'+ j
@@ -157,9 +129,6 @@ export default {
         for(var l=0;l<response.data['timestamp'].length;l++){
           temp_x_date.push(response.data['timestamp'][l])
         }
-        if(temp_x_date[0]<10){
-          alert('index!')
-        }
         this.option.xAxis.data = temp_x_date;
       })
     },
@@ -169,7 +138,21 @@ export default {
       var property=obj[i]; 
       description+=i+" = "+property+"\n"; 
       }
-      console.log(description); 
+    },
+    changezoomer(){
+      console.log(this.$refs["echart"].getOption().dataZoom[0].startValue)
+      var zoomerlen = parseInt(this.timegap/this.mingap)
+      var tempoption = {
+        dataZoom:[
+          {
+            type:'slider',
+            startValue:this.$refs["echart"].getOption().dataZoom[0].startValue,
+            endValue:this.$refs["echart"].getOption().dataZoom[0].startValue + zoomerlen
+          }
+        ]
+      }
+      this.$refs["echart"].setOption(tempoption)
+      // this.$refs["echart"].getOp()
     } 
   },
   mounted(){
@@ -192,5 +175,8 @@ export default {
 <style scoped>
 .chart {
   height: 500px;
+}
+#mainchart {
+  margin-top: 5px;
 }
 </style>

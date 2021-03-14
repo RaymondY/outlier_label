@@ -35,9 +35,7 @@ def load_data(path):
     print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     print(time)
     data = temp_data[:, 1:]
-    print(data)
     data = transformMatrix(data)
-    print(data)
     # 关闭科学计数法显示
     np.set_printoptions(suppress=True)
     return time, data
@@ -85,7 +83,13 @@ def upload():
         print(type(timestamp))
         print('====================================')
         print(timestamp)
-        dict_data = {'datas': data, 'timestamp': timestamp.tolist()}
+        # 如果是以index形式输入
+        if timestamp[0]==1:
+            daylength = np.ceil(len(timestamp)/288)
+            gen_timestamp = ["D%d-%02d:%02d" %(d,h,m) for d in range(1,int(daylength+1)) for h in range(0,24) for m in range(0,60,5)]
+            timestamp = gen_timestamp[0:len(timestamp)]
+        min_gap = get_interval(timestamp)
+        dict_data = {'datas': data, 'timestamp': timestamp, 'mingap': min_gap}
         
 
         # 将文件的数据以dict形式存储至json文件中
@@ -103,6 +107,8 @@ def upload():
         traceback.print_exc()
         return jsonify({'status': 'fail'})
 
+def get_interval(time_list):
+    return abs(int(time_list[1][-2:]) - int(time_list[0][-2:]))
 
 @app.route('/get/<file_name>', methods=['GET'])
 def get_data(file_name):
