@@ -32,12 +32,24 @@ CORS(app, supports_credentials=True)
 def load_data(path):
     temp_data = np.loadtxt(path, delimiter=',', skiprows=1)
     time = temp_data[:, 0]
+    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    print(time)
     data = temp_data[:, 1:]
+    print(data)
+    data = transformMatrix(data)
+    print(data)
     # 关闭科学计数法显示
-    # np.set_printoptions(suppress=True)
+    np.set_printoptions(suppress=True)
     return time, data
 
-
+def transformMatrix(m):
+    rt = [[] for i in m[0]]    # m[0] 有几个元素，说明原矩阵有多少列。此处创建转置矩阵的行
+    for ele in m:
+        for i in range(len(ele)):
+            # rt[i] 代表新矩阵的第 i 行
+            # ele[i] 代表原矩阵当前行的第 i 列
+            rt[i].append(ele[i])
+    return rt
 def strip_first_col(fname, delimiter):
     with open(fname, 'r') as fin:
         for line in fin:
@@ -68,9 +80,14 @@ def upload():
         metric_num, input_size, day_num = 19, 288, 15
         # global data
         # data = loadData(path, metric_num, input_size, day_num)
-        time, data = load_data(path)
-        dict_data = {file_name: data.tolist()}
-        str_data = json.dumps(dict_data)
+        timestamp, data = load_data(path)
+        print(type(data))
+        print(type(timestamp))
+        print('====================================')
+        print(timestamp)
+        dict_data = {'datas': data, 'timestamp': timestamp.tolist()}
+        
+
         # 将文件的数据以dict形式存储至json文件中
         with open('./' + file_name + '_data.json', 'w', encoding='utf-8') as fp:
             json.dump(dict_data, fp, ensure_ascii=True)

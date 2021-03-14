@@ -1,5 +1,15 @@
 <template>
-  <v-chart class="chart" :option="option" id="datachart" />
+  <div>
+    <div id='timeseletor'>
+      选择时间间隔：
+      <el-radio v-model="timegap" label="6h" border size="mini">6h</el-radio>
+      <el-radio v-model="timegap" label="12h" border size="mini">12h</el-radio>
+      <el-radio v-model="timegap" label="1d" border size="mini">1d</el-radio>
+      <el-radio v-model="timegap" label="3d" border size="mini">3d</el-radio>
+      <el-radio v-model="timegap" label="7d" border size="mini">7d</el-radio>
+    </div>
+    <v-chart class="chart" :option="option" id="datachart" v-if="this.current_file != 'None'"/>
+  </div>
 </template>
 
 <script>
@@ -38,6 +48,7 @@ export default {
   },
   data() {
     return {
+      timegap:'6h',
       current_file: 'None',
       option: {
         title: {
@@ -124,26 +135,32 @@ export default {
     getData(file_name){
       axios.get('http://127.0.0.1:5000/get/'+file_name).then(response => {
         // this.writeObj(response.data[file_name])
-        console.log(response.data[file_name][0].length)
-        console.log(response.data[file_name].length)
-        for(var j = 0;j<response.data[file_name].length;j++){
+        this.writeObj(response.data)
+        var temp_x_date = []
+        for(var j = 0;j<response.data['datas'].length;j++){
           var temp_name = 'kpi'+ j
           var temp_dict = {}
           temp_dict['name'] = temp_name
           temp_dict['type'] = 'line'
           temp_dict['stack'] = temp_name
           var temp_data = []
-          var temp_x_date = []
-          for(var i = 0;i<response.data[file_name][j].length;i++){
-            temp_data.push(response.data[file_name][j][i]);
-            temp_x_date.push(i);
+          
+          for(var i = 0;i<response.data['datas'][j].length;i++){
+            temp_data.push(response.data['datas'][j][i]);
             // console.log(i);
           }
-          this.option.xAxis.data = temp_x_date;
+          
           temp_dict['data'] = temp_data
           this.option.legend.data.push(temp_name)
           this.option.series.push(temp_dict)
         }
+        for(var l=0;l<response.data['timestamp'].length;l++){
+          temp_x_date.push(response.data['timestamp'][l])
+        }
+        if(temp_x_date[0]<10){
+          alert('index!')
+        }
+        this.option.xAxis.data = temp_x_date;
       })
     },
     writeObj(obj){ 
@@ -166,7 +183,7 @@ export default {
     EventBus.$on('deleteRow', msg => {
       this.option.data = []
       this.option.series = []
-      LineChart.clear()
+      this.current_file = 'None'
     })
   }
 };
