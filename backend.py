@@ -29,16 +29,28 @@ CORS(app, supports_credentials=True)
 #     return data
 
 
+# def load_data(path):
+#     temp_data = np.loadtxt(path, delimiter=',', skiprows=1)
+#     time = temp_data[:, 0]
+#     print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+#     print(time)
+#     data = temp_data[:, 1:]
+#     data = transformMatrix(data)
+#     # 关闭科学计数法显示
+#     np.set_printoptions(suppress=True)
+#     return time, data
+
+
+# 尝试重写load_data函数
 def load_data(path):
-    temp_data = np.loadtxt(path, delimiter=',', skiprows=1)
-    time = temp_data[:, 0]
-    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    print(time)
-    data = temp_data[:, 1:]
-    data = transformMatrix(data)
-    # 关闭科学计数法显示
-    np.set_printoptions(suppress=True)
-    return time, data
+    with open(path, 'r+', encoding='utf-8') as f:
+        data_mat = [i[:-1].split(',') for i in f.readlines()]
+        data_mat = data_mat[1:]
+        data_mat = np.transpose(data_mat)
+        time = data_mat[0]
+        data = data_mat[1:]
+        return time,data
+
 
 def transformMatrix(m):
     rt = [[] for i in m[0]]    # m[0] 有几个元素，说明原矩阵有多少列。此处创建转置矩阵的行
@@ -48,6 +60,8 @@ def transformMatrix(m):
             # ele[i] 代表原矩阵当前行的第 i 列
             rt[i].append(ele[i])
     return rt
+
+
 def strip_first_col(fname, delimiter):
     with open(fname, 'r') as fin:
         for line in fin:
@@ -79,9 +93,6 @@ def upload():
         # global data
         # data = loadData(path, metric_num, input_size, day_num)
         timestamp, data = load_data(path)
-        print(type(data))
-        print(type(timestamp))
-        print('====================================')
         print(timestamp)
         # 如果是以index形式输入
         if timestamp[0]==1:
@@ -89,7 +100,7 @@ def upload():
             gen_timestamp = ["D%d-%02d:%02d" %(d,h,m) for d in range(1,int(daylength+1)) for h in range(0,24) for m in range(0,60,5)]
             timestamp = gen_timestamp[0:len(timestamp)]
         min_gap = get_interval(timestamp)
-        dict_data = {'datas': data, 'timestamp': timestamp, 'mingap': min_gap}
+        dict_data = {'datas': data.tolist(), 'timestamp': timestamp.tolist(), 'mingap': min_gap}
         
 
         # 将文件的数据以dict形式存储至json文件中
