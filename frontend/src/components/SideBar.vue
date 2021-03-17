@@ -105,7 +105,7 @@ export default {
 
       })
       let that = this;
-      that.currentRow = null
+      // that.currentRow = null
       this.fileList.splice(index,1);
       EventBus.$emit('deleteRow')
     },

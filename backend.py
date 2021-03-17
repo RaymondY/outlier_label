@@ -95,12 +95,14 @@ def upload():
         timestamp, data = load_data(path)
         print(timestamp)
         # 如果是以index形式输入
-        if timestamp[0]==1:
+        if timestamp[0]=='1':
             daylength = np.ceil(len(timestamp)/288)
             gen_timestamp = ["D%d-%02d:%02d" %(d,h,m) for d in range(1,int(daylength+1)) for h in range(0,24) for m in range(0,60,5)]
             timestamp = gen_timestamp[0:len(timestamp)]
+        print('========================================')
+        print(timestamp)
         min_gap = get_interval(timestamp)
-        dict_data = {'datas': data.tolist(), 'timestamp': timestamp.tolist(), 'mingap': min_gap}
+        dict_data = {'datas': data.tolist(), 'timestamp': timestamp, 'mingap': min_gap}
         
 
         # 将文件的数据以dict形式存储至json文件中

@@ -1,6 +1,6 @@
 <template>
-  <div id = "mainchart" v-if="this.current_file != 'None'">
-    <div id='timeseletor'>
+<div id = 'allchart' :style="{width: '100%', height: '80%'}">
+  <div id='timeseletor'>
       选择时间间隔：
       <el-radio-group v-model="timegap">
         <el-radio :label=360 border size="mini">6h</el-radio>
@@ -10,85 +10,77 @@
         <el-radio :label=10080 border size="mini">7d</el-radio>
         <el-button size="mini" @click="changezoomer">确定</el-button>
       </el-radio-group>
-    </div>
-    <div>
-      <v-chart class="chart" :option="option" id="datachart" ref="echart"/>
-    </div>
   </div>
+  <div id="myChart" ref="chart" :style="{width: '100%', height: '100%'} "></div>
+</div>
 </template>
-
 <script>
-import { use } from "echarts/core";
-import { EventBus } from "../event-bus.js";
-import {
-  TitleComponent,
-  ToolboxComponent,
-  TooltipComponent,
-  GridComponent,
-  LegendComponent,
-} from "echarts/components";
-import { LineChart } from "echarts/charts";
-import { CanvasRenderer } from "echarts/renderers";
-import 'echarts/lib/component/dataZoom'
-import { default as VChart, THEME_KEY } from "vue-echarts";
 import axios from 'axios';
-
-use([
-  TitleComponent,
-  ToolboxComponent,
-  TooltipComponent,
-  GridComponent,
-  LegendComponent,
-  LineChart,
-  CanvasRenderer,
-]);
-
+// 引入基本模板
+let echarts = require('echarts/lib/echarts')
+import { EventBus } from "../event-bus.js";
+// 引入柱状图组件
+require('echarts/lib/chart/bar')
+// 引入提示框和title组件
+require('echarts/lib/component/tooltip')
+require('echarts/lib/component/title')
 export default {
-  name: "HelloWorld",
-  components: {
-    VChart,
-  },
-  provide: {
-    [THEME_KEY]: "light",
-  },
+  name: 'HelloWorld',
   data() {
     return {
       timegap:144,
       current_file: 'None',
       mingap:5,
-      option: {
-        title: {
-          text: "折线图堆叠",
-        },
-        tooltip: {
-          trigger: "axis",
-        },
-        legend: {
-          // data: ["邮件营销", "联盟广告", "视频广告", "直接访问"],
-          type: 'scroll',
-          orient: 'vertical',
-          left: '92%',
-          data:[]
-        },
-        grid: {
-          type: 'inside',
-          left: "3%",
-          right: "10%",
-          bottom: "3%",
-          containLabel: true,
-        },
-        toolbox: {
-          feature: {
-            saveAsImage: {},
+      mychart : 'null'
+    }
+  },
+  mounted() {
+    this.drawLine();
+    // document.getElementById('allchart').style.display = 'none';
+    EventBus.$on('changeRow',msg => {
+      document.getElementById('allchart').style.display = '';
+      this.getData(msg)
+      this.current_file = msg
+      console.log('!!current file:'+this.current_file)
+    })
+    EventBus.$on('deleteRow', msg => {
+      // this.option.data = []
+      // this.option.series = []
+      this.mychart.setOption({
+        legend:{
+            data:[]
           },
-        },
+          series: [],
+          xAxis:{
+            data: [],
+          }
+      })
+    })
+  },
+  methods: {
+    drawLine() {
+      // 基于准备好的dom，初始化echarts实例
+      let myChart = echarts.init(document.getElementById('myChart'))
+      this.mychart = myChart
+      // 绘制图表
+      myChart.setOption({
+        title: { text: 'ECharts 入门示例' },
+        tooltip: {},
         xAxis: {
-          type: "category",
-          boundaryGap: false,
-          data: [],
+          data: ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
         },
-        yAxis: {
-          type: "value",
+        yAxis: {},
+        series: [],
+        toolbox:{
+          feature:{
+            brush:{
+              type:['rect']
+            },
+          }
+        },
+        brush:{
+          xAxisIndex:'all',
+          yAxisIndex:'all'
         },
         dataZoom:[
           {
@@ -97,39 +89,47 @@ export default {
             end:20
           },
         ],
-        series: [
-        ],
-      },
-    };
-  },
-  methods: {
+      });
+      myChart.on('brushSelected', renderBrushed);
+        function renderBrushed(params) {
+          var mainseries = params.batch[0].selected[0].dataIndex;
+          console.log(mainseries)
+        }
+      document.getElementById('allchart').style.display = 'none';
+    },
     getData(file_name){
       axios.get('http://127.0.0.1:5000/get/'+file_name).then(response => {
         // this.writeObj(response.data[file_name])
         this.writeObj(response.data)
         this.mingap = response.data.mingap
-        var temp_x_date = []
+        var temp_x_date = [],namelist = [],serieslist =[]
         for(var j = 0;j<response.data['datas'].length;j++){
           var temp_name = 'kpi'+ j
           var temp_dict = {}
           temp_dict['name'] = temp_name
           temp_dict['type'] = 'line'
-          temp_dict['stack'] = temp_name
           var temp_data = []
-          
           for(var i = 0;i<response.data['datas'][j].length;i++){
             temp_data.push(response.data['datas'][j][i]);
             // console.log(i);
           }
           
           temp_dict['data'] = temp_data
-          this.option.legend.data.push(temp_name)
-          this.option.series.push(temp_dict)
+          namelist.push(temp_name)
+          serieslist.push(temp_dict)
         }
         for(var l=0;l<response.data['timestamp'].length;l++){
           temp_x_date.push(response.data['timestamp'][l])
         }
-        this.option.xAxis.data = temp_x_date;
+        this.mychart.setOption({
+          legend:{
+            data:namelist
+          },
+          series: serieslist,
+          xAxis:{
+            data: temp_x_date,
+          }
+        })
       })
     },
     writeObj(obj){ 
@@ -140,43 +140,20 @@ export default {
       }
     },
     changezoomer(){
-      console.log(this.$refs["echart"].getOption().dataZoom[0].startValue)
+      console.log(this.mychart.getOption().dataZoom[0].startValue)
       var zoomerlen = parseInt(this.timegap/this.mingap)
       var tempoption = {
         dataZoom:[
           {
             type:'slider',
-            startValue:this.$refs["echart"].getOption().dataZoom[0].startValue,
-            endValue:this.$refs["echart"].getOption().dataZoom[0].startValue + zoomerlen
+            startValue:this.mychart.getOption().dataZoom[0].startValue,
+            endValue:this.mychart.getOption().dataZoom[0].startValue + zoomerlen
           }
         ]
       }
-      this.$refs["echart"].setOption(tempoption)
+      this.mychart.setOption(tempoption)
       // this.$refs["echart"].getOp()
     } 
-  },
-  mounted(){
-    EventBus.$on('changeRow',msg => {
-      this.option.data = []
-      this.option.series = []
-      this.getData(msg)
-      this.current_file = msg
-      console.log('current file:'+this.current_file)
-    }),
-    EventBus.$on('deleteRow', msg => {
-      this.option.data = []
-      this.option.series = []
-      this.current_file = 'None'
-    })
   }
-};
+}
 </script>
-
-<style scoped>
-.chart {
-  height: 500px;
-}
-#mainchart {
-  margin-top: 5px;
-}
-</style>
